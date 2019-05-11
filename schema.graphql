@@ -1,0 +1,36 @@
+schema {
+  query: Query
+}
+
+type Query {
+  busIncidents(route: String): [BusIncident]!
+  elevatorIncidents(stationId: String): [ElevatorIncident]!
+  railIncidents: [RailIncident]!
+}
+
+type BusIncident {
+  dateUpdated: String
+  description: String
+  incidentId: String
+  incidentType: String
+  routesAffected: [String]
+}
+
+type ElevatorIncident {
+  dateOutOfService: String
+  dateUpdated: String
+  estimatedReturnToService: String
+  locationDescription: String
+  stationCode: String!
+  symptomDescription: String
+  unitName: String
+  unitType: String
+}
+
+type RailIncident {
+  dateUpdated: String
+  description: String
+  incidentId: String
+  incidentType: String
+  linesAffected: [String]!
+}

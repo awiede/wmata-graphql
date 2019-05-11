@@ -1,0 +1,19 @@
+# .gqlgen.yml example
+#
+# Refer to https://gqlgen.com/config/
+# for detailed .gqlgen.yml documentation.
+
+schema:
+- schema.graphql
+exec:
+  filename: generated.go
+models:
+  RailIncident:
+    model: github.com/awiede/wmata-go-sdk/wmata/incidents.RailIncident
+  ElevatorIncident:
+    model: github.com/awiede/wmata-go-sdk/wmata/incidents.ElevatorIncident
+  BusIncident:
+    model: github.com/awiede/wmata-go-sdk/wmata/incidents.BusIncident
+resolver:
+  filename: resolver.go
+  type: Resolver
