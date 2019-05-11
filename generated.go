@@ -12,6 +12,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/awiede/wmata-go-sdk/wmata/incidents"
+	"github.com/awiede/wmata-go-sdk/wmata/railpredictions"
 	"github.com/vektah/gqlparser"
 	"github.com/vektah/gqlparser/ast"
 )
@@ -64,6 +65,7 @@ type ComplexityRoot struct {
 	Query struct {
 		BusIncidents      func(childComplexity int, route *string) int
 		ElevatorIncidents func(childComplexity int, stationID *string) int
+		NextTrains        func(childComplexity int, stationCodes []*string) int
 		RailIncidents     func(childComplexity int) int
 	}
 
@@ -74,12 +76,25 @@ type ComplexityRoot struct {
 		IncidentType  func(childComplexity int) int
 		LinesAffected func(childComplexity int) int
 	}
+
+	Train struct {
+		Car             func(childComplexity int) int
+		Destination     func(childComplexity int) int
+		DestinationCode func(childComplexity int) int
+		DestinationName func(childComplexity int) int
+		Group           func(childComplexity int) int
+		Line            func(childComplexity int) int
+		LocationCode    func(childComplexity int) int
+		LocationName    func(childComplexity int) int
+		Minutes         func(childComplexity int) int
+	}
 }
 
 type QueryResolver interface {
 	BusIncidents(ctx context.Context, route *string) ([]*incidents.BusIncident, error)
 	ElevatorIncidents(ctx context.Context, stationID *string) ([]*incidents.ElevatorIncident, error)
 	RailIncidents(ctx context.Context) ([]*incidents.RailIncident, error)
+	NextTrains(ctx context.Context, stationCodes []*string) ([]*railpredictions.Train, error)
 }
 type RailIncidentResolver interface {
 	LinesAffected(ctx context.Context, obj *incidents.RailIncident) ([]*string, error)
@@ -215,6 +230,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.ElevatorIncidents(childComplexity, args["stationId"].(*string)), true
 
+	case "Query.NextTrains":
+		if e.complexity.Query.NextTrains == nil {
+			break
+		}
+
+		args, err := ec.field_Query_nextTrains_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.NextTrains(childComplexity, args["stationCodes"].([]*string)), true
+
 	case "Query.RailIncidents":
 		if e.complexity.Query.RailIncidents == nil {
 			break
@@ -256,6 +283,69 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.RailIncident.LinesAffected(childComplexity), true
+
+	case "Train.Car":
+		if e.complexity.Train.Car == nil {
+			break
+		}
+
+		return e.complexity.Train.Car(childComplexity), true
+
+	case "Train.Destination":
+		if e.complexity.Train.Destination == nil {
+			break
+		}
+
+		return e.complexity.Train.Destination(childComplexity), true
+
+	case "Train.DestinationCode":
+		if e.complexity.Train.DestinationCode == nil {
+			break
+		}
+
+		return e.complexity.Train.DestinationCode(childComplexity), true
+
+	case "Train.DestinationName":
+		if e.complexity.Train.DestinationName == nil {
+			break
+		}
+
+		return e.complexity.Train.DestinationName(childComplexity), true
+
+	case "Train.Group":
+		if e.complexity.Train.Group == nil {
+			break
+		}
+
+		return e.complexity.Train.Group(childComplexity), true
+
+	case "Train.Line":
+		if e.complexity.Train.Line == nil {
+			break
+		}
+
+		return e.complexity.Train.Line(childComplexity), true
+
+	case "Train.LocationCode":
+		if e.complexity.Train.LocationCode == nil {
+			break
+		}
+
+		return e.complexity.Train.LocationCode(childComplexity), true
+
+	case "Train.LocationName":
+		if e.complexity.Train.LocationName == nil {
+			break
+		}
+
+		return e.complexity.Train.LocationName(childComplexity), true
+
+	case "Train.Minutes":
+		if e.complexity.Train.Minutes == nil {
+			break
+		}
+
+		return e.complexity.Train.Minutes(childComplexity), true
 
 	}
 	return 0, false
@@ -329,6 +419,7 @@ type Query {
   busIncidents(route: String): [BusIncident]!
   elevatorIncidents(stationId: String): [ElevatorIncident]!
   railIncidents: [RailIncident]!
+  nextTrains(stationCodes: [String]): [Train]
 }
 
 type BusIncident {
@@ -357,7 +448,18 @@ type RailIncident {
   incidentType: String
   linesAffected: [String]!
 }
-`},
+
+type Train {
+  car: String
+  destination: String
+  destinationCode: String
+  destinationName: String
+  group: String
+  line: String
+  locationCode: String
+  locationName: String
+  minutes: String
+}`},
 )
 
 // endregion ************************** generated!.gotpl **************************
@@ -403,6 +505,20 @@ func (ec *executionContext) field_Query_elevatorIncidents_args(ctx context.Conte
 		}
 	}
 	args["stationId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_nextTrains_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 []*string
+	if tmp, ok := rawArgs["stationCodes"]; ok {
+		arg0, err = ec.unmarshalOString2ᚕᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["stationCodes"] = arg0
 	return args, nil
 }
 
@@ -848,6 +964,37 @@ func (ec *executionContext) _Query_railIncidents(ctx context.Context, field grap
 	return ec.marshalNRailIncident2ᚕᚖgithubᚗcomᚋawiedeᚋwmataᚑgoᚑsdkᚋwmataᚋincidentsᚐRailIncident(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_nextTrains(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_nextTrains_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().NextTrains(rctx, args["stationCodes"].([]*string))
+	})
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*railpredictions.Train)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOTrain2ᚕᚖgithubᚗcomᚋawiedeᚋwmataᚑgoᚑsdkᚋwmataᚋrailpredictionsᚐTrain(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
@@ -1024,6 +1171,222 @@ func (ec *executionContext) _RailIncident_linesAffected(ctx context.Context, fie
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNString2ᚕᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Train_car(ctx context.Context, field graphql.CollectedField, obj *railpredictions.Train) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Train",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Car, nil
+	})
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Train_destination(ctx context.Context, field graphql.CollectedField, obj *railpredictions.Train) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Train",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Destination, nil
+	})
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Train_destinationCode(ctx context.Context, field graphql.CollectedField, obj *railpredictions.Train) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Train",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DestinationCode, nil
+	})
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Train_destinationName(ctx context.Context, field graphql.CollectedField, obj *railpredictions.Train) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Train",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DestinationName, nil
+	})
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Train_group(ctx context.Context, field graphql.CollectedField, obj *railpredictions.Train) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Train",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Group, nil
+	})
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Train_line(ctx context.Context, field graphql.CollectedField, obj *railpredictions.Train) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Train",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Line, nil
+	})
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Train_locationCode(ctx context.Context, field graphql.CollectedField, obj *railpredictions.Train) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Train",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LocationCode, nil
+	})
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Train_locationName(ctx context.Context, field graphql.CollectedField, obj *railpredictions.Train) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Train",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LocationName, nil
+	})
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Train_minutes(ctx context.Context, field graphql.CollectedField, obj *railpredictions.Train) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Train",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Minutes, nil
+	})
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) graphql.Marshaler {
@@ -1995,6 +2358,17 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "nextTrains":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_nextTrains(ctx, field)
+				return res
+			})
 		case "__type":
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
@@ -2043,6 +2417,46 @@ func (ec *executionContext) _RailIncident(ctx context.Context, sel ast.Selection
 				}
 				return res
 			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalid {
+		return graphql.Null
+	}
+	return out
+}
+
+var trainImplementors = []string{"Train"}
+
+func (ec *executionContext) _Train(ctx context.Context, sel ast.SelectionSet, obj *railpredictions.Train) graphql.Marshaler {
+	fields := graphql.CollectFields(ctx, sel, trainImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	invalid := false
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Train")
+		case "car":
+			out.Values[i] = ec._Train_car(ctx, field, obj)
+		case "destination":
+			out.Values[i] = ec._Train_destination(ctx, field, obj)
+		case "destinationCode":
+			out.Values[i] = ec._Train_destinationCode(ctx, field, obj)
+		case "destinationName":
+			out.Values[i] = ec._Train_destinationName(ctx, field, obj)
+		case "group":
+			out.Values[i] = ec._Train_group(ctx, field, obj)
+		case "line":
+			out.Values[i] = ec._Train_line(ctx, field, obj)
+		case "locationCode":
+			out.Values[i] = ec._Train_locationCode(ctx, field, obj)
+		case "locationName":
+			out.Values[i] = ec._Train_locationName(ctx, field, obj)
+		case "minutes":
+			out.Values[i] = ec._Train_minutes(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2765,6 +3179,38 @@ func (ec *executionContext) marshalOString2ᚕstring(ctx context.Context, sel as
 	return ret
 }
 
+func (ec *executionContext) unmarshalOString2ᚕᚖstring(ctx context.Context, v interface{}) ([]*string, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]*string, len(vSlice))
+	for i := range vSlice {
+		res[i], err = ec.unmarshalOString2ᚖstring(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOString2ᚕᚖstring(ctx context.Context, sel ast.SelectionSet, v []*string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalOString2ᚖstring(ctx, sel, v[i])
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
 	if v == nil {
 		return nil, nil
@@ -2778,6 +3224,57 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 		return graphql.Null
 	}
 	return ec.marshalOString2string(ctx, sel, *v)
+}
+
+func (ec *executionContext) marshalOTrain2githubᚗcomᚋawiedeᚋwmataᚑgoᚑsdkᚋwmataᚋrailpredictionsᚐTrain(ctx context.Context, sel ast.SelectionSet, v railpredictions.Train) graphql.Marshaler {
+	return ec._Train(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOTrain2ᚕᚖgithubᚗcomᚋawiedeᚋwmataᚑgoᚑsdkᚋwmataᚋrailpredictionsᚐTrain(ctx context.Context, sel ast.SelectionSet, v []*railpredictions.Train) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		rctx := &graphql.ResolverContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithResolverContext(ctx, rctx)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOTrain2ᚖgithubᚗcomᚋawiedeᚋwmataᚑgoᚑsdkᚋwmataᚋrailpredictionsᚐTrain(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalOTrain2ᚖgithubᚗcomᚋawiedeᚋwmataᚑgoᚑsdkᚋwmataᚋrailpredictionsᚐTrain(ctx context.Context, sel ast.SelectionSet, v *railpredictions.Train) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Train(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValue(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

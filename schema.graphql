@@ -6,6 +6,7 @@ type Query {
   busIncidents(route: String): [BusIncident]!
   elevatorIncidents(stationId: String): [ElevatorIncident]!
   railIncidents: [RailIncident]!
+  nextTrains(stationCodes: [String]): [Train]
 }
 
 type BusIncident {
@@ -33,4 +34,16 @@ type RailIncident {
   incidentId: String
   incidentType: String
   linesAffected: [String]!
+}
+
+type Train {
+  car: String
+  destination: String
+  destinationCode: String
+  destinationName: String
+  group: String
+  line: String
+  locationCode: String
+  locationName: String
+  minutes: String
 }

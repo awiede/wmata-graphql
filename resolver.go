@@ -3,6 +3,7 @@ package wmata_graphql
 import (
 	"context"
 	"github.com/awiede/wmata-go-sdk/wmata"
+	"github.com/awiede/wmata-go-sdk/wmata/railpredictions"
 	"github.com/pkg/errors"
 	"strings"
 
@@ -12,15 +13,20 @@ import (
 // THIS CODE IS A STARTING POINT ONLY. IT WILL NOT BE UPDATED WITH SCHEMA CHANGES.
 
 type Resolver struct {
-	service *incidents.Service
+	incidentService        *incidents.Service
+	railPredictionsService *railpredictions.Service
 }
 
 func NewResolver(apiKey string) *Resolver {
 	client := wmata.NewWMATADefaultClient(apiKey)
 
-	incidentService := incidents.NewService(client, wmata.JSON)
+	incidents := incidents.NewService(client, wmata.JSON)
+	railPredictions := railpredictions.NewService(client, wmata.JSON)
 
-	return &Resolver{service: incidentService}
+	return &Resolver{
+		incidentService:        incidents,
+		railPredictionsService: railPredictions,
+	}
 }
 
 func (r *Resolver) Query() QueryResolver {
@@ -39,7 +45,7 @@ func (r *queryResolver) BusIncidents(ctx context.Context, route *string) ([]*inc
 		busRoute = *route
 	}
 
-	response, err := r.service.GetBusIncidents(busRoute)
+	response, err := r.incidentService.GetBusIncidents(busRoute)
 
 	if err != nil {
 		return nil, err
@@ -61,7 +67,7 @@ func (r *queryResolver) ElevatorIncidents(ctx context.Context, stationID *string
 		railStation = *stationID
 	}
 
-	response, err := r.service.GetOutages(railStation)
+	response, err := r.incidentService.GetOutages(railStation)
 
 	if err != nil {
 		return nil, err
@@ -77,7 +83,7 @@ func (r *queryResolver) ElevatorIncidents(ctx context.Context, stationID *string
 
 }
 func (r *queryResolver) RailIncidents(ctx context.Context) ([]*incidents.RailIncident, error) {
-	response, err := r.service.GetRailIncidents()
+	response, err := r.incidentService.GetRailIncidents()
 
 	if err != nil {
 		return nil, err
@@ -90,6 +96,32 @@ func (r *queryResolver) RailIncidents(ctx context.Context) ([]*incidents.RailInc
 	}
 
 	return railIncidents, nil
+}
+
+func (r *queryResolver) NextTrains(ctx context.Context, stationCodes []*string) ([]*railpredictions.Train, error) {
+	var stations []string
+
+	if stationCodes != nil {
+		stations = make([]string, len(stationCodes))
+
+		for _, station := range stationCodes {
+			stations = append(stations, *station)
+		}
+	}
+
+	response, err := r.railPredictionsService.GetNextTrains(stations)
+
+	if err != nil {
+		return nil, err
+	}
+
+	trains := make([]*railpredictions.Train, len(response.Trains))
+
+	for _, train := range response.Trains {
+		trains = append(trains, &train)
+	}
+
+	return trains, nil
 }
 
 type railIncidentResolver struct{ *Resolver }

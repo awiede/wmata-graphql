@@ -14,6 +14,8 @@ models:
     model: github.com/awiede/wmata-go-sdk/wmata/incidents.ElevatorIncident
   BusIncident:
     model: github.com/awiede/wmata-go-sdk/wmata/incidents.BusIncident
+  Train:
+    model: github.com/awiede/wmata-go-sdk/wmata/railpredictions.Train
 resolver:
   filename: resolver.go
   type: Resolver
